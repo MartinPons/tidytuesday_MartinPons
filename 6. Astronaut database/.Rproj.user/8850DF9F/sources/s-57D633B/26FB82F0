@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1594808327332.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "26FB82F0",
+    "lastKnownWriteTime" : 1595235372,
+    "last_content_update" : 1595235372400,
+    "path" : "C:/Users/marti/Desktop/tidytuesday/tidytuesday_MartinPons/6. Astronaut database/astronaut_database.R",
+    "project_path" : "astronaut_database.R",
+    "properties" : {
+        "cursorPosition" : "77,37",
+        "scrollLine" : "71",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

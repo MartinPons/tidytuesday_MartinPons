@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1595232901361.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C1F7A5F7",
+    "lastKnownWriteTime" : 1594235364,
+    "last_content_update" : 1594235364,
+    "path" : "C:/Users/marti/Desktop/tidytuesday/tidytuesday_MartinPons/5. Uncanny X-men/characters_EDA.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "242,62",
+        "scrollLine" : "232"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
