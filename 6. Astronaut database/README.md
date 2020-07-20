@@ -6,4 +6,4 @@ https://data.mendeley.com/datasets/86tsnnbv2w/1
 
 # Data preparation by [Georgios Karamanis](https://twitter.com/geokaramanis)
 
-https://pbs.twimg.com/media/EdW7GgiWoAAHMyO?format=png&name=900x900
+![number_of_astronauts(https://github.com/MartinPons/tidytuesday_MartinPons/edit/master/6.%20Astronaut%20database/number_astronauts.png?raw=true)
