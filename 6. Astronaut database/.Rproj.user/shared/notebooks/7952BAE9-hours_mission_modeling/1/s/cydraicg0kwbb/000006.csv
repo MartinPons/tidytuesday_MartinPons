@@ -1,0 +1,5 @@
+"0","test_rs <- astro_test %>% "
+"0","  bind_cols(predict(tree_rs, astro_test)) %>% "
+"0","  rename(.pred_tree = .pred) %>% "
+"0","    bind_cols(predict(mars_rs, astro_test)) %>% "
+"0","  rename(.pred_mars = .pred)"

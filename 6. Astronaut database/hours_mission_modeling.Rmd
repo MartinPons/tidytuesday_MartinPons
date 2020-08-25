@@ -1,0 +1,189 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+
+# libraries
+library(tidytuesdayR)
+library(tidyverse)
+library(extrafont)
+
+
+
+# data load
+tuesdata <- tidytuesdayR::tt_load('2020-07-14')
+
+# data frame astronauts
+astronauts <- tuesdata$astronauts
+```
+
+#### EDA
+
+```{r}
+# Año ##
+
+astronauts %>% 
+  mutate(year_of_mission = 10 * (year_of_mission %/% 10),
+         year_of_mission = factor(year_of_mission)) %>% 
+  ggplot(aes(year_of_mission, hours_mission, 
+             fill = year_of_mission, color = year_of_mission)) + 
+  geom_boxplot(show.legend = F, alpha = 0.2, size = 1.5) + 
+  scale_y_log10() + 
+  labs(x = NULL, y = "Duration of mission in hours")
+
+```
+
+#### WRANGLING
+
+```{r}
+astronauts_df <- astronauts %>% 
+  select(name, mission_title, hours_mission,
+         military_civilian, occupation, 
+         year_of_mission, in_orbit) %>% 
+  mutate(in_orbit = case_when(str_detect(in_orbit, "^Salyut") ~ "Salyuy",
+                              str_detect(in_orbit, "^STS") ~ "STS", 
+                              TRUE ~ in_orbit)) %>% 
+  mutate(occupation = str_to_lower(occupation)) %>% 
+  filter(hours_mission > 0) %>% 
+  mutate(hours_mission  = log(hours_mission)) %>% 
+  na.omit()
+```
+
+### BUILD MODEL
+
+```{r}
+library(tidymodels)
+
+set.seed(123)
+
+astro_split <- initial_split(astronauts_df, strata = hours_mission)
+astro_train <- training(astro_split)
+astro_test <- testing(astro_split)
+
+
+```
+
+#### Data preprocessing
+
+Usamos el paquete recipes, que se utiliza para recipe engineer
+
+Le decimos lo que queremos predecir, como y cuales son mis datos
+
+```{r}
+astro_recipe <- recipe(hours_mission ~ ., data = astro_train) %>% 
+  update_role(name, mission_title, new_role = "id") %>% # name y mission title no son predictores. Juntos forman una id
+  
+  # hay que niveles en algunas variables
+  step_other(occupation, in_orbit, threshold = 0.05) %>% # para meter infrecuentes en other
+  
+  step_dummy(all_nominal(), - has_role("id"))
+
+```
+
+Se ha especificado el recipe pero nada ha sido estimado, entrenado o ejecutado.
+
+Para ver los datos preparados
+```{r}
+astro_recipe %>% prep() %>% juice()
+```
+
+Uso de bagging model.
+
+Es un metodo bootstrap. Sus beneficios son que agregar modelos aumenta precision, estbilidad y la robustez y reduce la varianza
+
+```{r}
+library(baguette)
+
+## creacion de workflow ##
+astro_wf <- workflow() %>% 
+  add_recipe(astro_recipe)
+
+## especificacion de modelos ##
+# tree bag model
+tree_spec <- bag_tree() %>% 
+  
+  # estimador rpart con 25 muestras bootstrap
+  set_engine("rpart", times = 25) %>% 
+  
+  # es regresion, no clasificacion. Agregamos en media para obtener prediccion
+  set_mode("regression")
+
+
+# tree bag model
+mars_spec <- bag_mars() %>% 
+  
+  # estimador rpart con 25 muestras bootstrap
+  set_engine("earth", times = 25) %>% 
+  
+  # es regresion, no clasificacion. Agregamos en media para obtener prediccion
+  set_mode("regression")
+
+## adicion de modelo a workflow y training ##
+tree_rs <- astro_wf %>% 
+  add_model(tree_spec) %>% 
+  fit(astro_train)
+
+mars_rs <- astro_wf %>% 
+  add_model(mars_spec) %>% 
+  fit(astro_train)
+
+```
+
+
+#### EVALUACION DE LOS MODELOS
+
+Compararemos los dos modelos que hemos construido
+
+```{r}
+test_rs <- astro_test %>% 
+  bind_cols(predict(tree_rs, astro_test)) %>% 
+  rename(.pred_tree = .pred) %>% 
+    bind_cols(predict(mars_rs, astro_test)) %>% 
+  rename(.pred_mars = .pred)
+```
+
+```{r}
+test_rs %>% 
+  metrics(hours_mission, .pred_tree)
+
+test_rs %>% 
+  metrics(hours_mission, .pred_mars)
+```
+
+
+```{r}
+new_astronauts <- crossing(in_orbit = c("ISS", "STS", "Mir", "other"),
+                           military_civilian = "civilian", 
+                           occupation = "other", 
+                           year_of_mission = seq(1960, 2020, by = 10),
+                           
+                           # el modelo quiere las id
+                           name = "id", mission_title = "id") %>% 
+  filter(!(in_orbit == "ISS"& year_of_mission < 2000)) %>% 
+  filter(!(in_orbit == "Mir"& year_of_mission < 1990)) %>% 
+  filter(!(in_orbit == "STS"& year_of_mission < 1980)) %>% 
+  filter(!(in_orbit == "STS"& year_of_mission > 2010))
+
+new_astronauts %>% 
+  bind_cols(predict(mars_rs, new_astronauts)) %>% 
+  ggplot(aes(year_of_mission, .pred, color = in_orbit)) +
+  geom_line(size = 1.5, alpha = 0.7) + 
+  geom_point(size = 2) + 
+  labs(x = NULL, color = NULL, y = "Duration in mission in hours predicted in log scale")
+```
+

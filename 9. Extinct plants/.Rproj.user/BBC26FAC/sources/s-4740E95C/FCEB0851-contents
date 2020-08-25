@@ -1,0 +1,176 @@
+#Tidytuesday project for 2020-08-18
+# Extinct plants
+
+# Data Set sorc: International Union for Conservation of Nature
+# https://www.iucnredlist.org/
+
+# Data preparation by Florent Lavergne
+# https://www.behance.net/florentlavergne
+
+# libraries
+library(tidyverse)
+library(gridExtra)
+library(grid)
+library(extrafont)
+
+# get the data
+tuesdata <- tidytuesdayR::tt_load('2020-08-18')
+threats <- tuesdata$threats
+  
+
+
+# order year_last_seen variable
+ordered_periods <- c("Before 1900" , "1900-1919", "1920-1939" ,
+                     "1940-1959", "1960-1979", "1980-1999",
+                     "2000-2020")
+threats <- threats %>% 
+  mutate(year_last_seen = fct_relevel(year_last_seen, ordered_periods))
+
+
+# setting color and font family constants
+background_color <-  "#AAC6AA"
+fill_palette <- c("#AA3939", "#CD6666", "grey60")
+text_color <- "#014401"
+text_family <- "Skranji"
+
+
+# BAR PLOT ----------------------------------------------------------------
+
+g_bars <- threats %>% 
+  
+  # filter for existing threats and count by type
+  filter(threatened == 1) %>% 
+  count(threat_type) %>% 
+  
+  # group threats into the two we are interested for this visualization
+  mutate(threat_grouped = ifelse(threat_type %in% c("Climate Change", "Geological Events"), 
+                                 threat_type, "others")) %>% 
+  
+  # x and y coordinates
+  ggplot(aes(n, fct_reorder(threat_type, n))) +
+  
+  # cols
+  geom_col(aes(fill = threat_grouped), show.legend = F, width = .7) + 
+ 
+  # grid vertical lines
+  geom_vline(xintercept = seq(0, 250, by = 50), color = background_color) + 
+  
+  # labels inside the cols
+  geom_text(aes(label = threat_type), hjust = 0, x = 3, family = text_family, 
+            color = text_color) +
+  
+  # text annotation
+  annotate(x = 110, y = 4, geom = "text", size = 3, color = "grey20", family = text_family,
+           label = 
+           "500 plant species are considered\nextinct as of 2020. The two major\ncauses linked to plant extinctions\nare Agriculture & Aquaculture,\nand Biological Resorce Use.", hjust = 0) +
+  
+  # labels
+  labs(x = "Nº of extinct plant species", y = NULL, 
+       title = "Threats linked to extinction of plant species*") +
+  
+  # fill palette
+  scale_fill_manual(values = fill_palette) +
+  
+ # theme
+  theme(
+      text = element_text(color = text_color, family = text_family),
+      axis.text = element_text(color = text_color),
+      axis.ticks.y = element_blank(),
+      panel.background = element_rect(fill = background_color, color = background_color),
+      plot.background = element_rect(fill = background_color, color = background_color),
+      panel.grid = element_blank(),
+      axis.text.y = element_blank())
+  
+
+# LINE PLOT ---------------------------------------------------------------
+
+g_lines <- threats %>% 
+  
+  # filter for existing threats and non missing periods
+  filter(threatened == 1, !is.na(year_last_seen)) %>% 
+  
+  # count by type of threat and period
+  count(threat_type, year_last_seen) %>% 
+  
+  # group in type threats we are interested in
+  mutate(threat_grouped = ifelse(threat_type %in% c("Climate Change", "Geological Events"), 
+                                 threat_type, "others")) %>% 
+  
+  # getting index numbers
+  ungroup() %>% 
+  group_by(threat_type) %>% 
+  mutate(growth_index = n / first(n)) %>% 
+  
+  # x and y coordinates
+  ggplot(aes(year_last_seen, growth_index)) + 
+  
+  # lines and points grouped by threat and colored by our threat grouping
+  geom_line(aes(color = threat_grouped, group = threat_type, alpha = threat_grouped),
+            size = 1, show.legend = F) + 
+  geom_point(aes(fill = threat_grouped, alpha = threat_grouped,
+                 color = threat_grouped, size = threat_grouped),
+             shape = 21, show.legend = F) + 
+  
+  # threshold of 1 for growth index
+  geom_hline(yintercept = 1, lty = "dashed", color = "#14681A") + 
+  
+  # text annotation
+  annotate(x = 1, y = 8.5, geom = "text", 
+           color = "grey20", hjust = 0,
+           family = text_family, size = 3,
+           label = "Despite not being among the major causes\nlinked to plant extinctions, the number\nof plant species extinct due to Climate Change\nhas increased ten-fold since 1900.\nPlants extincted because of Geological Events have also\nexperienced a large increase in de lasts decades.") +
+ 
+  # scales for color, transparency and size. All of them are linked to variables in the plot
+  scale_color_manual(values = fill_palette) + 
+  scale_fill_manual(values = fill_palette) +
+  scale_alpha_manual(values = c(1, 1, 0.6)) +
+  scale_size_manual(values = c(4.5, 4.5, 2)) + 
+  
+  # labs
+  labs(fill = NULL, color = NULL, alpha = NULL, x = "Period species was last seen"
+       , y = "Growth index (Before 1900 = 1)",
+       title = "Growth in the number of extinct plant species since 1900 grouped by different threats") +
+  
+  # theme
+  theme(
+    text = element_text(color = text_color, family = text_family),
+    axis.text = element_text(color = text_color),
+    panel.background = element_rect(fill = background_color, color = background_color),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = "grey85"),
+    panel.grid.minor.y = element_line(color = "grey85"),
+    plot.background = element_rect(fill = background_color, color = background_color),
+    legend.background = element_blank(),
+    legend.box.background = element_blank())
+
+
+
+# ARRANGEMENT -------------------------------------------------------------
+
+# background for title and caption
+rect <- rectGrob(gp=gpar(fill=background_color, col = background_color))
+
+# title grob
+title <- grobTree(rect,
+                  textGrob("Climate change has grown in importance as an existential threat to plant species in the lasts decades", 
+                           gp=gpar(col = text_color,
+                                   fontfamily = text_family,
+                                   cex = 1.3)))
+# caption grob
+caption <- grobTree(rect,
+                    textGrob("*Threats are not mutually exclusive: an extinct plant can be linked to more than one threat.\nData comes from the International Union for Conservation of Nature. Scrapped and prepared by  Florent Lavergne. Visualization by Martín Pons | @MartinPonsM",
+                             gp = gpar(fontfamily = text_family, 
+                             col = "grey20", 
+                             cex = 0.7)))
+
+# arrange and display grobs
+grid.arrange(grobs = list(title, caption, g_bars, g_lines), 
+             widths = c(4, 6),
+             heights = c(1, 9, 1),
+             layout_matrix = rbind(c(1, 1),
+                                   c(3, 4),
+                                   c(2, 2)))
+
+
+
+

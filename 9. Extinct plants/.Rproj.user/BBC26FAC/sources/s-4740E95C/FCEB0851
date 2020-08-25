@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1598265550524.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "FCEB0851",
+    "lastKnownWriteTime" : 1598368754,
+    "last_content_update" : 1598368754083,
+    "path" : "C:/Users/Usuario/Desktop/tidytuesday_MartinPons/9. Extinct plants/extinct_plants.R",
+    "project_path" : "extinct_plants.R",
+    "properties" : {
+        "cursorPosition" : "39,2",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

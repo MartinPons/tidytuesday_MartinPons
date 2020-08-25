@@ -1,0 +1,37 @@
+
+# Precicción de horas de la misión con bootstrap aggregating
+# Aregamos regresiones
+
+# libraries
+library(tidytuesdayR)
+library(tidyverse)
+library(extrafont)
+
+
+
+# data load
+tuesdata <- tidytuesdayR::tt_load('2020-07-14')
+
+# data frame astronauts
+astronauts <- tuesdata$astronauts
+
+
+
+# EDA ---------------------------------------------------------------------
+
+## Año ##
+
+astronauts %>% 
+  mutate(year_of_mission = 10 * (year_of_mission %/% 10),
+         year_of_mission = factor(year_of_mission)) %>% 
+  ggplot(aes(year_of_mission, hours_mission, 
+             fill = year_of_mission, color = year_of_mission)) + 
+  geom_boxplot(show.legend = F, alpha = 0.2, size = 1.5) + 
+  scale_y_log10() + 
+  labs(x = NULL, y = "Duration of mission in hours")
+
+
+
+# WRANGLING ---------------------------------------------------------------
+
+

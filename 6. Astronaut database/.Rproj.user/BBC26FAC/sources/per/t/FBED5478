@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1596861853863.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3779950704",
+    "id" : "FBED5478",
+    "lastKnownWriteTime" : 1596866433,
+    "last_content_update" : 1596866433512,
+    "path" : "C:/Users/Usuario/Desktop/tidytuesday_MartinPons/6. Astronaut database/hours_mission_modeling.Rmd",
+    "project_path" : "hours_mission_modeling.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "cursorPosition" : "182,24",
+        "scrollLine" : "170",
+        "tempName" : "Untitled3"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
