@@ -40,7 +40,7 @@ g_bars <- threats %>%
   
   # filter for existing threats and count by type
   filter(threatened == 1) %>% 
-  count(threat_type) %>% 
+  count(threat_type) %>%
   
   # group threats into the two we are interested for this visualization
   mutate(threat_grouped = ifelse(threat_type %in% c("Climate Change", "Geological Events"), 
@@ -90,8 +90,10 @@ g_lines <- threats %>%
   filter(threatened == 1, !is.na(year_last_seen)) %>% 
   
   # count by type of threat and period
-  count(threat_type, year_last_seen) %>% 
+  count(threat_type, year_last_seen, .drop = F) %>% 
   
+  mutate(n = na_if(n, 0)) %>% 
+           
   # group in type threats we are interested in
   mutate(threat_grouped = ifelse(threat_type %in% c("Climate Change", "Geological Events"), 
                                  threat_type, "others")) %>% 
@@ -118,7 +120,7 @@ g_lines <- threats %>%
   annotate(x = 1, y = 8.5, geom = "text", 
            color = "grey20", hjust = 0,
            family = text_family, size = 3,
-           label = "Despite not being among the major causes\nlinked to plant extinctions, the number\nof plant species extinct due to Climate Change\nhas increased ten-fold since 1900.\nPlants extincted because of Geological Events have also\nexperienced a large increase in de lasts decades.") +
+           label = "Despite not being among the major causes\nlinked to plant extinctions, the number\nof plant species extinct due to Climate Change\nhas increased ten-fold since 1900.\nPlants extinct because of Geological Events have also\nexperienced a large increase in de lasts decades.") +
  
   # scales for color, transparency and size. All of them are linked to variables in the plot
   scale_color_manual(values = fill_palette) + 

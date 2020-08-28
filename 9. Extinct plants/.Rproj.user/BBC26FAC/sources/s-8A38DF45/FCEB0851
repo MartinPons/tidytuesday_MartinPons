@@ -7,13 +7,13 @@
     "folds" : "",
     "hash" : "0",
     "id" : "FCEB0851",
-    "lastKnownWriteTime" : 1598368754,
-    "last_content_update" : 1598368754083,
+    "lastKnownWriteTime" : 1598630961,
+    "last_content_update" : 1598630961160,
     "path" : "C:/Users/Usuario/Desktop/tidytuesday_MartinPons/9. Extinct plants/extinct_plants.R",
     "project_path" : "extinct_plants.R",
     "properties" : {
-        "cursorPosition" : "12,13",
-        "scrollLine" : "0",
+        "cursorPosition" : "175,0",
+        "scrollLine" : "159",
         "tempName" : "Untitled1"
     },
     "read_only" : false,
