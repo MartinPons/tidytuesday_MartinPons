@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1602004911042.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "BDA1CC13",
+    "lastKnownWriteTime" : 15,
+    "last_content_update" : 1602004911042,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "F490BE2D",
+        "caption" : "tournament",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=tournament&cache_key=F490BE2D",
+        "displayedObservations" : 1600,
+        "environment" : "",
+        "expression" : "tournament",
+        "object" : "tournament",
+        "preview" : 0,
+        "totalObservations" : 1600,
+        "variables" : 19
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

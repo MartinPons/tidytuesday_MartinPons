@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1602001670402.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "172600723",
+    "id" : "7F67CCF",
+    "lastKnownWriteTime" : 1602503666,
+    "last_content_update" : 1602503666886,
+    "path" : "C:/Users/marti/Desktop/tidytuesday/tidytuesday_MartinPons/2020_41. NCAA Women's Basketball Tournament/ncaa_womens_basketball_tournament.R",
+    "project_path" : "ncaa_womens_basketball_tournament.R",
+    "properties" : {
+        "cursorPosition" : "12,8",
+        "scrollLine" : "8",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
