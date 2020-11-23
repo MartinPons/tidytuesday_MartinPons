@@ -1,0 +1,296 @@
+# lesson4.R
+
+
+
+# READING IN SPATIAL DATA -------------------------------------------------
+
+# El paquete rgdal permite leer en formato vector (lineas y poligonos): readOGR()
+library(rgdal)
+
+# los shape data son en realidad directorios que contienen mas datos dentro
+
+# para leerlo pasamos por la funcion 
+#readOGR(directorio, nombre de archivo sin extension)
+
+water <- readOGR("data/Water", "water")
+
+summary(water)
+plot(water)
+
+# tambien podemos leer archivos raster con readGDAL, pero es mejor usar el paquete raster
+# archivos raster tienen a veces la extension tif
+
+
+
+# PRACTICA READING SPATIAL DATA -------------------------------------------
+
+## 01. Reading in a shapefile ##
+
+# leemos datos bajados de 
+# https://www1.nyc.gov/site/planning/data-maps/open-data/dwn-nynta.page
+
+library(sp)
+library(rgdal)
+
+# usamos dir para saber el nombre del directorio
+dir("data")
+
+# usamos dir para ver los nombres de los archivos de dento
+dir("data/nynta_18d")
+
+# leemos
+neighborhoods <- readOGR(here::here("data", "nynta_18d"), "nynta")
+
+
+# mirarmos summary
+summary(neighborhoods)
+
+# ploteamos
+plot(neighborhoods)
+
+
+## 02. Reaging in a raster file ##
+library(raster)
+
+# directorio para ver nombre
+dir("data")
+
+# dir dentro
+dir("data/nyc_grid_data")
+
+# leemos con raster
+income_grid <- raster("data/nyc_grid_data/m5602ahhi00.tif")
+
+summary(income_grid)
+
+plot(income_grid)
+
+
+# 03. Getting data using a package ##
+
+# la libreria "rnaturalearth" tiene datos de alta resolucion de mapas del mundo
+
+# la libreria "tigris" tiene shapefiles del US Census
+
+library(rnaturalearth) # esta no me hace falta. La cargo para que la veas
+library(sp)
+library(tigris)
+
+# descargamos fronteras de NY
+nyc_tracts <- tracts(state = "NY", county = "New York", cb = TRUE)
+
+summary(nyc_tracts)
+plot(nyc_tracts)
+
+
+
+# COORDINATE REFERENCE SYSTEMS --------------------------------------------
+
+# la funcion proj4strings() devuelve informacion de los sistemas de coordenadas
+countries_spdf <- readRDS(here::here("data", "02_countries_spdf.rds"))
+proj4string(countries_spdf)
+
+# este string devuelve un character de acuerdo con la descripcción del CRS de proj4, una libreria de C para transformar coordenadas
+
+# Que nos dice este character
+# -proj4=longlat: las coordenadas estan en longitud latitud. Es decir, no proyectadas.
+# +datum=WGS84, +ellps=WGS84: no hay solo una definicion de latitud y longitud. Hay que especificar tambien un elipsoide 
+# (apromaximacion a que la tierra no es esferica), y un datun: posicion del elipsoide relativo a la tierra.
+# los que se muestran en el ejemplo son buenos para global datsets
+
+# lso del siguiente son buenos para areas mas pequeñas (por ejemplo USA)
+proj4string(nyc_tracts)
+
+# las coordenadas de referencia son diferentes en el siguiente ejemplo
+proj4string(neighborhoods)
+# +proj=lcc: lambert comformant conic proyection
+
+# crear un Spatial Object from scratch
+x <- SpatialPoints(data.frame(-123.2620, 44.5646))
+x
+
+# vemos que no se ha definido un sistema de coordenadas. Definimos uno
+proj4string(x) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+#esto no ha cambiado las coordenadas
+x
+
+# si queremos ir de una proyeccion a la otra hay que transformar las coordenadas
+library(rgdal)
+
+spTransform(x, "+proj=lcc +lat_1=40.66666666666666  +lat_2=41.03333333333333 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000 +y_0=0 +datum=NAD83 +units=us-ft +no_defs +ellps=GRS80 +towgs84=0,0,0")
+
+# o bien, le asignamos la de un objeto que exista
+x <- spTransform(x, proj4string(neighborhoods))
+x #fijarse que las coordenadas han cambiado
+
+
+# PRACTICA COORDINATE REFERENCE SYSTEMS -----------------------------------
+
+## 01. Merging data from different CRS/projections ##
+
+#llamamos al proj4string de los datos anteriores y los ploteamos
+proj4string(neighborhoods)
+proj4string(nyc_tracts)
+
+# miramos las coordinadas de los datos
+head(coordinates(neighborhoods))
+head(coordinates(nyc_tracts))
+# observa como difieren los rangos de coordenadas
+
+plot(neighborhoods)
+plot(nyc_tracts, col = "red", add = T) # no vemos el grafico porque las coordenadas son muy diferentes. Tendríamos que verlo encima
+
+
+## 02. Converting from one CRS/projection to another ##
+
+# los metodos de spTransform no sirven para objetos raster
+
+# transformamos neighbourhood al mismo CRS que nyc_tracts
+neighborhoods <- spTransform(neighborhoods, proj4string(nyc_tracts))
+
+head(coordinates(neighborhoods))
+
+# ploteamos neighbours y nyc_tracts
+plot(neighborhoods)
+plot(nyc_tracts, col = "red", add = T)
+
+# tmap hace las transformaciones de coordenadas automaticamente
+
+
+
+# ADDING DATA TO SPATIAL OBJECTS ------------------------------------------
+
+# datos
+nyc_income <- readRDS(here::here("data", "04_nyc_income.rds"))
+nyc_tracts <- readRDS(here::here("data", "04_nyc_tracts.rds"))
+water <- readRDS(here::here("data", "04_water_big.rds"))
+
+str(nyc_tracts@data)
+
+# correspondence between polygons and data
+
+
+
+# PRACTICA ADDING DATA TO SPATIAL OBJECTS ---------------------------------
+
+# 01. The wrong way ##
+
+# destacamos el tract 002201
+plot(nyc_tracts)
+plot(nyc_tracts[nyc_tracts$TRACTCE == "002201", ], 
+     col = "red", add = TRUE)
+
+
+## 02. Checking data will match ##
+
+# usamos sp:: merge para asignar ids del spatial object con nuestro data frmae de dtos relevantes
+
+
+# miramos que no haya duplicados en las id de ncy_income y las id del data frmae del objeto sp
+any(duplicated(nyc_income$tract))
+
+any(duplicated(nyc_tracts$TRACTCE))
+
+# comprobamos que tienen las mismas ids y que no hay ninguna suelta
+
+all(nyc_tracts$TRACTCE %in% nyc_income$tract)
+all(nyc_income$tract %in%  nyc_tracts$TRACTCE) 
+
+
+## 03. Merging data attributes ##
+
+library(sp)
+library(tmap)
+
+# Merge nyc_tracts and nyc_income: nyc_tracts_merge
+nyc_tracts_merge <- sp::merge(nyc_tracts, nyc_income, by.x = "TRACTCE", by.y = "tract")  # no hace falta ir al data frame del sp object
+
+# Call summary() on nyc_tracts_merge
+summary(nyc_tracts_merge)
+
+# Choropleth with col mapped to estimate
+tm_shape(nyc_tracts_merge) + 
+  tm_fill(col = "estimate")
+
+
+## 04. A first plot ##
+
+# añadimos water y neighborhoods al mapa de antes
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate") + 
+  tm_shape(water) + # para cada capa de datos hay que añadir un tm_shape
+  tm_fill(col = "grey90") + 
+  tm_shape(neighborhoods) + 
+  tm_borders() # las fronteras de los neighborhoods
+
+
+
+# POLISHING A MAP ---------------------------------------------------------
+
+# Sugerencias
+
+# lOs datos es lo que tiene que atraer mas la atencion, quitar lo que distraiga
+# titulos y leyendas claros
+# añadir anotaciones si procede
+# incluir fuentes
+
+
+
+# PRACTICA POLISHING A MAP ------------------------------------------------
+
+## 01. Subsetting the neighborhoods ##
+head(neighborhoods)
+
+# intentamos hallar el codigo para New York County
+unique(nyc_tracts_merge$COUNTYFP)
+
+# solo incluimos los neighborhoods de NYC
+manhat_hoods <- neighborhoods[neighborhoods$CountyFIPS == "061", ]
+
+# ploteamos
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate") +
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  # Edit to use manhat_hoods instead
+  tm_shape(manhat_hoods) +
+  tm_borders() +
+  tm_text(text = "NTAName")
+
+# reacemos las labels de los vecindarios pàra que sean mas "mapeables"
+
+## 02. Añadimos etiquetas a los neighborhoods ##
+manhat_hoods$name <- gsub(" ", "\n", manhat_hoods$NTAName) # intros en lugar de espacios
+manhat_hoods$name <- gsub("-", "/\n", manhat_hoods$name) # reemplazamos tambien los guiones por intros
+
+
+# remapeamos cambiando columna de labels y cambiando tamaño
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate") +
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  # Edit to use manhat_hoods instead
+  tm_shape(manhat_hoods) +
+  tm_borders() +
+  tm_text(text = "name", size = 0.5, col = "black")
+
+## 03. Tidying up the legend and some final tweaks ##
+
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate",
+          title = "Median Income", 
+          palette = "Greens") + # añadimos titulo a leyenda y cambiamos paleta
+  tm_borders(col = "grey60", lwd = 0.5) + # añadimos borders a los tracts
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  # Edit to use manhat_hoods instead
+  tm_shape(manhat_hoods) +
+  tm_borders(col = "grey40", lwd = 2) +
+  tm_text(text = "name", size = 0.5, col = "black") + 
+  tm_credits("Source: ACS 2014 5-year Estimates, \n accessed via acs package", 
+             position = c("right", "bottom")) # añadimos fuente
+
+
+# grabamos mapa
+tmap_save(filename = here::here("4. Reading in spatial data", "nyc_income_map.png"), width = 4, height = 7)

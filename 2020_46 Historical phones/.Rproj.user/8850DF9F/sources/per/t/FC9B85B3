@@ -1,0 +1,25 @@
+{
+    "id": "FC9B85B3",
+    "path": "~/cursos_online/Working with Geospatial Data in R/4. Reading in spatial data/lesson4.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "3715804893",
+    "contents": "",
+    "dirty": false,
+    "created": 1605804384690.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "cursorPosition": "207,0",
+        "scrollLine": "0",
+        "source_window_id": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1544102554,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1544102554,
+    "read_only": false,
+    "read_only_alternatives": []
+}

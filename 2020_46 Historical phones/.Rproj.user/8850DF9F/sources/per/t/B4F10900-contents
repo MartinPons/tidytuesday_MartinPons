@@ -1,0 +1,158 @@
+library(sp)
+
+countries_sp <- readRDS(here::here("02_countries_sp.rds"))
+
+
+# los objetos sp tienen metodos especiales para print, summary y plot
+
+print(countries_sp)
+summary(countries_sp)
+plot(countries_sp)
+
+# el metodo print no ayuda mucho, mejor llamamos a str, limitando la profundidad con max.level
+str(countries_sp, max.level = 2)
+
+# los objetos sp son de clase S4, por eso no tenemos los $ sino @. No tenemos elementos sino "slots"
+# a los slots se accede un poco diferente a como se hace en elementos en listas
+# tienen una estructura recursiva
+
+# analizamos otro objeto de CLASE DIFERENTE. ESTE ES UN SPATIAL POLYGONS DATA FRAME
+countries_spdf <- readRDS(here::here("data", "02_countries_spdf.rds"))
+
+summary(countries_spdf)
+str(countries_spdf, max.level = 2)
+plot(countries_spdf)
+
+# en lo unico que se diferencia es que se añade un data.frame con información,
+# con n de filas igual a n de poligonos
+
+
+
+# PRACTICA DE ACCESO A SLOTS ----------------------------------------------
+
+# accedemos al poligono 169
+
+one <- countries_spdf@polygons[[169]]
+print(one)
+summary(one)
+str(one, max.level = 2)
+
+# dentro de este poligono inicial hay 10 poligonos mas. Es un objeto de clase Polygon con 10 Polygons mas dentor
+str(one@Polygons, max.level = 2)
+
+# mirarmos qué hay dentro de uno de estos poligonos
+str(one@Polygons[[6]], max.level = 2) # parece que ya hemos llegado al final. No hay mas poligonos dentro
+
+# vamos aplotearlo
+plot(one@Polygons[[6]]@coords) #es estados unidos. coords es simlement una matriz de coordenadas.
+# Estamos llamando al metodo plot por defecto
+
+## EEUU tiene mas de un poligono porque hay islas y todo eso
+# Así que hemos bajado dos poligonos para llegar al nivel de pais. Un tercer nivel ya nos da los poligonos reales
+
+
+# Para acceder a la informacion por pais está pensado para que sea como un data.frame
+
+str(countries_spdf[1, ], max.level = 2) # accedemos a primer pais (data.frame tiene solo una fila)
+
+
+# PRACTICA SUBSET EN UN SPDF OBJECT ---------------------------------------
+
+## 1. subseteamos usa ##
+usa <- countries_spdf[169, ]
+
+# el objeto subseteado sigue siendo spdf
+summary(usa)
+
+# vemos que solo hay un elemento en el slot de poligonos. corresponde a usa
+str(usa, max.level = 2)
+
+# ploteamos
+plot(usa)
+
+## 2. Accedemos a datos en objetos sp ##
+
+# si subseteamos el objeto directamente con $, nos pone en la columna que queremos del data.frame
+# de el slot data
+head(countries_spdf@data)
+str(countries_spdf@data)
+
+countries_spdf$name
+countries_spdf[["subregion"]]
+
+## 3. Subseteamos basandonos en atributos de los datos ##
+
+# subseteamos nueva zelanda
+
+is_nz <- countries_spdf$name == "New Zealand"
+nz <- countries_spdf[is_nz, ]
+
+plot(nz)
+
+# subsetando con tmap
+library(tmap)
+
+# creamos un coropleth del mundo con gdp
+qtm(shp = countries_spdf, fill = "gdp")
+
+# PAQUETE tmap PARA MANEJAR OBJETOS sp ------------------------------------
+
+ # filosofia parecida a ggplot2
+ # tmap usa una funcion parecida a qplot pero espera un objeto sp y no un data.frame
+
+library(tmap)
+data(World)
+
+tm_shape(World) +  # datos
+  tm_borders() + # capa de fornteras
+  tm_fill(col = "pop_est") + # filleamos con poblacion
+  tm_compass() +  # añadimos simbolo de norte
+  tmap_style("cobalt")
+
+
+## 1. Countruir un grafico con capas ##
+
+# Add style argument to the tm_fill() call
+tm_shape(countries_spdf) +
+  tm_fill(col = "population", style = "quantile") + # para que la escala de colores sea más coherente  (outliers)
+  # Add a tm_borders() layer 
+  tm_borders(col = "burlywood4")
+
+
+tm_shape(countries_spdf) + 
+  tm_bubbles(size = "population", style = "quantile") + 
+  tm_borders(col = "burlywood4")
+
+
+## 2. Proyecciones. Why is Greenland so big? ## 
+
+# el anterior grafico distorsiona zonas cerca de los polos.
+
+# proyeccion Hobo-Dyer para preservar el area
+tm_shape(countries_spdf, projection = "hd") +
+  tm_grid(n.x = 11, n.y = 11) +
+  tm_fill(col = "population", style = "quantile") +
+  tm_borders(col = "burlywood4")
+
+# proyeccion Robinson compromiso entre preservar angulos locales y area
+tm_shape(countries_spdf, proyection = "robin") +
+  tm_grid(n.x = 11, n.y = 11) +
+  tm_fill(col = "population", style = "quantile") +
+  tm_borders(col = "burlywood4")
+
+# no tiene que ver, pero añadimos estilo clasico
+tm_shape(countries_spdf, proyection = "robin") +
+  tm_grid(n.x = 11, n.y = 11) +
+  tm_fill(col = "population", style = "quantile") +
+  tm_borders(col = "burlywood4") + 
+  tm_style_classic()
+
+
+## 3. Grabar un grafico tmap ##
+
+# grabamos version estatica
+tmap_save(filename = here::here("2. Point and polygon data", "population.png"))
+
+# grabamos version interactiva mas acorde con leaflet
+tmap_save(filename =  here::here("2. Point and polygon data", "population.html"), 
+          width = 1920, height = 1080)

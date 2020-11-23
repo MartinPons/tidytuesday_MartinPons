@@ -1,0 +1,565 @@
+---
+title: 'División dentro del Partido Demócrata de los EE.UU en Twitter. Parte I: politíca sanitaria'
+author: Martín Pons
+date: '2020-06-23'
+slug: división-dentro-del-partido-demócrata-en-los-ee-uu-politíca-sanitaria.es-es
+categories:
+  - Español
+  - Análisis
+  - R
+tags:
+  - Topic analysis
+  - DNC
+  - Partido Demócrata
+  - Medicare For All
+  - Single Payer
+  - Sentiment Analysis
+  - Justice Democrats
+  - Bernie Sanders
+  - Twitter
+thumbnailImage: https://lh3.googleusercontent.com/-99liaguyuLYN0Y-Kl-ItkMLZy7oLy8IJxyzR6PziDQOYUB-QqFAmh9uWEU0hg-hsFJSTF0JINkS3Qp37YUeSI_00ZJ1tzYwDWJ1raOnevXqoUreaE_6ZyxSZHFKDYWGw6uyx_OHIPe_m5rn9ereQu4wHElNBDoUEKI7_KxMcMJXSyxVVLSPk5-PhJQhe9dchi4GJH-c9Lyif8qSqknmGS219ISvGvIU8GeYRoXqob9IcjQQBBo1IsQGKVpYK8w6h66kllAEGsQUZK1h4Mtsl2dDe0_vRBGWczqJEuUz0Ec_Gm3LfDVwAf4-r7G-4NGto5gg6Wk-J8gwJdvEb0IVa_rlXVvRoP5EpfjkV4wbXvqdqapknKxMEjr35t1-ZTYQsTdyX7PW2XI3TRcqegVcFSzsM4vZs_X6RUZ8QKaIf6PsrBgICNSnQYg0zNVV1KIN5cQSvTUZsJYHu6PVfevFpCNV_sXq-e2pjiKMlMr3qsir7Kjqj9Ted65qAIAhuKZTFdz45j-xMFYMvfERjapuDCOX-IKKTIaaqu9BFCy3whXfs5bqXkDJ5_JIJ_dO8b9SrXVOlXCgvifXT8YP9Fw-Ub88fdrMkVvtlXNw_pDfZ7Qo7T7EJpXFYzFwXV_u_a5m73o8Yz5urPLE_tkgUfToB2ff140lZkulVewH94QR8I9trBx12aNniBpahYXT6Q=w750-h257-no?authuser=1
+thumbnailImagePosition: top
+---
+
+```{r configuracion_inicial, message = F, warning = F, echo = F}
+
+# global options
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
+# paleta graficos
+plots_palette <- c("#ad5d51", "grey55", "#2b559e", "#947240")
+
+# orden comunidades
+comunidad_order <- c("GOP", "Independent", "DNC", "Progressives")
+
+# carga de funciones
+source(here::here("content", "post", "DNC_analysis", "scripts", "funciones_auxiliares.R"))
+
+
+# librerias
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(tidygraph)
+library(ggraph)
+library(forcats)
+library(grid)
+library(gridExtra)
+library(boot)
+library(extrafont)
+library(tokenizers)
+library(kableExtra)
+library(scales)
+library(widyr)
+
+```
+
+
+Es dificil saber *a simple vista* si la polarización en Twitter está aumentando o solamente **parece** que está aumentando.
+
+Tal como la propia compañía no se molesta en ocultar, [se priorizan los tweets que vemos en pantalla en base a nuestro perfil e historial](https://www.reuters.com/article/usa-twitter/twitter-users-decry-reported-plan-to-prioritize-tweets-idUSKCN0VG072), de manera que los tweets que leemos normalmente en nuestro timeline (las impresiones) no solo no son una muestra representativa de la población de Twitter, sino que probablemente tampoco lo sean de las personas o instituciones que seguimos.
+
+<!--more-->
+
+Uno de los posibles efectos colaterales de este criterio de priorización de tweets es una aparente polarización, que se manifiesta con frustrante facilidad en temas relacionados con la política. Sin embargo este intencionado *display* de tweets limita nuestra percepción (como *meros usuarios* que somos) del equilibrio de contenidos en la plataforma: impide vislumbrar hasta que punto la polarización aparente es real. Para medirla, hay que emplear un enfoque analítico.
+
+Esta entrada es la primera de una serie en la que partiendo de este punto de vista, analizaré comportamiento en las redes sociales de los seguidores de dos movimientos dentro del **Partido Demócrata en los EE.UU (DNC)**, e intentaré sacar alguna conclusión sobre el grado de división interna.
+                                    
+La realidad del DNC hoy es que en él conviven dos corrientes de pensamiento: una *mainstream*, más tradicional y centrista -son ejemplos el ex vicepresidente y candidato a la presidencia **Joe Biden**, o la senadora **Amy Klobuchar**- y una corriente progresita, personalizada en figuras políticas como el senador **Bernie Sanders**, o las congresistas **Alexandria Ocasio-Cortez**, **Rashida Tlaib** e **Ilhan Omar**. Es bien posible que las diferencias en ideas y modo de ver el mundo de estos dos grupos sean más acusadas de lo que sería normal entre dos corrientes de pensamiento dentro de un mismo partido. [Por lo menos esa es la percepción que tienen los votantes](https://news.gallup.com/poll/284360/democrats-viewed-divided-satisfied-candidates.aspx).
+
+Las próximas elecciones presidenciales tendrán lugar ya este año. Si uno sigue con cierto detalle la política de los EE.UU, y específicamente la dinámica del DNC, no preguntarse hasta qué punto llega la aparente división que hay dentro del DNC, y cómo puede afectar al resultado de las próximas elecciones presidenciales (¿es posible que un número significativo de votantes progresistas no vaya a votar el día de las elecciones?), es casi antinatural.
+
+En esta primera entrada me centraré en política sanitaria. [La sanidad ha tomado protagonismo en los debates de las primarias demócratas](https://www.youtube.com/watch?v=zCze3LGMuVc), y el plan de sanidad universal del ya excandidato Bernie Sanders, ***Medicare for All***, ha sido una de las propuestas estrella de su candidatura a la presidencia del país.
+
+Para los análisis relacionados con esta y las próximas entradas se recogieron datos de tweets ([tweet objects](https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/tweet-object)) entre el 24 de abril y el 17 de mayo, donde se filtraron consultas para obtener tweets sobre tópicos relevantes como **sanidad**, **educación** o **cambio climático**, además de tweets que mencionan a tres figuras políticas de referencia dentro de los grupos analizados: **Donald Trump**, **Joe Biden** y **Bernie Sanders**.
+
+Para la creación de las comunidades se recogieron los identificadores de los seguidores de las siguientes cuentas
+<br>
+
+- @[GOP](https://twitter.com/GOP): cuenta oficial del partido republicano.
+- @[TheDemocrats](https://twitter.com/TheDemocrats): cuenta oficial del Comité Nacional Demócrata.
+- @[justicedems](https://twitter.com/justicedems): cuenta oficial de Justice Democrats, grupo progresista dentro del partido demócrata (esta cuenta tiene de hecho más seguidores que la [cuenta del caucus progresista](https://twitter.com/USProgressives)). 
+
+Se formaron tres comunidades con estos seguidores
+
+- **GOP**: Republicanos. Seguidores de la cuenta @GOP que no son seguidores de @TheDemocrats ni de @justicedems
+- **DNC**: Demócratas moderados. Seguidores de la cuenta @TheDemocrats que no lo son de @GOP ni de @justicedems
+- **Progressives**: Progresistas. Seguidores de la cuenta @justicedems que no lo son de @GOP (sí se incluyen aquí seguidores de @justicedems que también lo son de @TheDemocrats, al estar el movimiento progresista dentro del partído demócrataEsta elección, aunque me parece la única plausible, presenta limitaciones de definición de comunidades).
+
+Los datos empleados en esta y las próximas entradas han sido previamente limpiados, incluyendo procesos como eliminación de mails y urls, normalización de términos o trasformación de emoticonos en palabras. Se puede acceder al código en este enlace.
+
+Se han filtrado términos directamente referidos a la pandemia del virus que provoca la enfermedad COVID19, para tener una visión mas estructural y lo menos conaminada posible por la coyuntura actual. Aunque como ser verá, han quedado en el análisis un número relevante de tweets que hace referencia de forma indirecta a la pandemia.
+
+Las funciones para el preprocesamiento, análisis y visualización de los datos están accesibles en [este enlace](https://github.com/MartinPons/DNC-analysis/blob/master/00-funciones_auxiliares.R).
+
+La unidad de análisis es el tweet, por lo que el nivel de actividad de los usuarios no se tiene en cuenta. Pero se limitan los hashtags más relevantes a aquellos que hayan sido tuiteados por más de 3 usuarios distintos.
+
+```{r carga_datos, echo = F}
+
+healthcare <- readRDS(here::here("content", "post", "DNC_ANALYSIS", "datos", "datos_twitter_limpiados", "healthcare.rds")) %>% 
+  filter(comunidad != "Independent")
+climate <- readRDS(here::here("content", "post", "DNC_ANALYSIS", "datos", "datos_twitter_limpiados", "climatechange.rds")) %>% 
+  filter(comunidad != "Independent")
+education <- readRDS(here::here("content", "post", "DNC_ANALYSIS", "datos", "datos_twitter_limpiados", "education.rds")) %>% 
+  filter(comunidad != "Independent")
+
+```
+
+
+Se recogieron más de 16 mil tweets de la comunidad GOP, más de 17 mil de la comunidad Progressives, y más de 19 mil de la comunidad DNC, que mencionaban el tópico *healthcare*. En la tabla 1 se presentan además el número de tweets recogidos sobre "climage chagnge" y "education", datos empleados para para contextualizar los resultados del tópico "healthcare".
+
+
+```{r n_tweets_grafico, fig.height=4, fig.width=9, fig.align="center"}
+# bind_rows(healthcare %>% 
+#             mutate(topico = "Healthcare"), 
+#           climate %>% 
+#             mutate(topico = "Climage Change"), 
+#           education %>% 
+#             mutate(topico = "Education")) %>% 
+#   mutate(topico = fct_relevel(topico, c("Healthcare", "Climate Change", "Education"))) %>% 
+#   ggplot(aes(topico)) + 
+#   geom_bar(stat = "count", aes(fill = comunidad), position = "dodge", color = "white", width = 0.7, size = 2.5) + 
+#   scale_y_continuous(labels = function(x) format(x, big.mark = ".")) + 
+#   scale_fill_manual(values = plots_palette[c(1, 3, 4)]) + 
+#   theme_bw() + 
+#   theme(text = element_text(family = "Georgia", color = "grey45"),
+#         panel.border = element_blank(), 
+#         panel.grid.major.x = element_blank(), 
+#         legend.position = "top", 
+#         legend.title = element_blank(),
+#         axis.title = element_blank())
+```
+  
+
+```{r n_tweets_comunidad}
+
+tabla_ntweets <- bind_rows(healthcare %>% 
+            mutate(topico = "Healthcare"), 
+          climate %>% 
+            mutate(topico = "Climate Change"), 
+          education %>% 
+            mutate(topico = "Education")) %>% 
+  count(topico, comunidad) %>% 
+  group_by(topico) %>% 
+  mutate(f = paste0("(", round(n / sum(n) * 100), ")"),
+         n = format(n, big.mark = ".", decimal.mark = ","))  %>% 
+  unite("n_tweets", n, f, sep = " ") %>% 
+  pivot_wider(names_from = topico, values_from = n_tweets) %>% 
+  select(comunidad, Healthcare, Education, `Climate Change`) %>% 
+  setNames(c("Comunidad", "Healthcare", "Education", "Climate Change"))
+
+tabla_ntweets[c(2, 1, 3), ] %>% 
+  kable() %>%  
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, font_size = 13) %>% 
+  add_header_above(c("Tabla1: Número de tweets recogidos (%)" = 4), color = "grey45", font_size = 13)
+
+
+
+  # %>% 
+  # mutate(f = paste0("(", round(n / sum(n) * 100), ")"),
+  #        n = format(n, big.mark = ".")) %>% 
+  # unite(n, f, col = `Nº tweets (%)`, sep = "   ") %>% 
+  #   rename(Comunidad = comunidad) %>% 
+ 
+```
+
+
+
+
+```{r n_topicos_comunes}
+
+# carga de datos
+healthcare_frequency <- readRDS(here::here("content", "post", "DNC_analysis", "datos", "hashtag_ranking", "healthcare_hashtag_frequency.rds")) %>%
+  filter(n_usuarios > 3) %>% 
+  group_by(comunidad) %>% arrange(desc(n))
+
+# limpieza de medicareforall: se une con medicareforallll
+
+healtcare_frequency <- healthcare_frequency %>% 
+  mutate(word = str_replace(word, "#medicareforallll", "#medicareforall")) %>% 
+  group_by(comunidad, word) %>% 
+  summarise(n = sum(n), 
+            n_usuarios = sum(n_usuarios))
+
+climate_frequency <- readRDS(here::here("content", "post", "DNC_analysis",  "datos", "hashtag_ranking", "climatechange_hashtag_frequency.rds")) %>% 
+  filter(n_usuarios > 3) %>% 
+  group_by(comunidad) %>% arrange(desc(n))
+
+education_frequency <- readRDS(here::here("content", "post", "DNC_analysis",  "datos" , "hashtag_ranking","education_hashtag_frequency.rds")) %>% 
+  filter(n_usuarios > 3) %>% 
+  group_by(comunidad) %>% arrange(desc(n))
+
+# healthcare
+top_healthcare_gop <- healthcare_frequency[healthcare_frequency$comunidad == "GOP", "word", drop = T][1:40]
+top_healthcare_dnc <- healthcare_frequency[healthcare_frequency$comunidad == "DNC", "word", drop = T][1:40]
+top_healthcare_prg <- healthcare_frequency[healthcare_frequency$comunidad == "Progressives", "word", drop = T][1:40]
+
+common_healthcare_dnc_gop <- get_common_terms(top_healthcare_dnc, top_healthcare_gop)
+common_healthcare_dnc_prg <- get_common_terms(top_healthcare_dnc, top_healthcare_prg)
+
+common_healthcare <- data.frame(
+  top_words = rep(1:length(common_healthcare_dnc_gop), 2),
+  common_words = c(common_healthcare_dnc_gop, common_healthcare_dnc_prg),
+  comparacion = rep(c("DNC-GOP", "DNC-PRG"), each = 40),
+  topic = "Healthcare"
+)
+
+
+# climate change
+top_climate_gop <- climate_frequency[climate_frequency$comunidad == "GOP", "word", drop = T][1:40]
+top_climate_dnc <- climate_frequency[climate_frequency$comunidad == "DNC", "word", drop = T][1:40]
+top_climate_prg <- climate_frequency[climate_frequency$comunidad == "Progressives", "word", drop = T][1:40]
+
+common_climate_dnc_gop <- get_common_terms(top_climate_dnc, top_climate_gop)
+common_climate_dnc_prg <- get_common_terms(top_climate_dnc, top_climate_prg)
+
+common_climate <- data.frame(
+  top_words = rep(1:length(common_climate_dnc_gop), 2),
+  common_words = c(common_climate_dnc_gop, common_climate_dnc_prg),
+  comparacion = rep(c("DNC-GOP", "DNC-PRG"), each = 40),
+  topic = "Climate Change"
+)
+
+
+# education
+top_education_gop <- education_frequency[education_frequency$comunidad == "GOP", "word", drop = T][1:40]
+top_education_dnc <- education_frequency[education_frequency$comunidad == "DNC", "word", drop = T][1:40]
+top_education_prg <- education_frequency[education_frequency$comunidad == "Progressives", "word", drop = T][1:40]
+
+common_education_dnc_gop <- get_common_terms(top_education_dnc, top_education_gop)
+common_education_dnc_prg <- get_common_terms(top_education_dnc, top_education_prg)
+
+common_education <- data.frame(
+  top_words = rep(1:length(common_education_dnc_gop), 2),
+  common_words = c(common_education_dnc_gop, common_education_dnc_prg),
+  comparacion = rep(c("DNC-GOP", "DNC-PRG"), each = 40),
+  topic = "Education"
+)
+```
+
+### Encuentros y diferencias entre progresistas y el DNC.
+
+La figura 1 muestra que de los 40 hashtags más empleados por las tres comunidades, progresistas y DNC tienen 16 en común. Número similar al que comparten en educación, pero más reducido que el que comparten en cambio climático.
+
+
+```{r visualizacion_hashtag_ranking, fig.height = 6, fig.width = 14}
+
+# union de data frames
+common_words <- bind_rows(common_healthcare, common_climate, common_education)
+
+# visualizacion
+common_words %>% 
+  mutate(topic = fct_relevel(topic, c("Healthcare", "Education", "Climate Change"))) %>% 
+  ggplot(aes(top_words, common_words, color = comparacion)) + 
+  geom_step(size = 1.2) + 
+  geom_text(data = common_words %>% filter(top_words == 40), 
+            aes(label = common_words), show.legend = F, nudge_x = 2, fontface = "bold", size = 6) + 
+  facet_wrap(~fct_relevel(topic, c("Joe Biden", "Donald Trump", "Bernie Sanders")), scales = "free") + 
+  labs(x = "Ranking de los hashtags más empleados", 
+       y = "Nº de Hashtags comunes", 
+       title = "Nº de hashtags comunes de entre los más empleados. Comparación\n del DNC con las otras dos comunidades") +
+  scale_color_manual(values = plots_palette[c(1, 4)]) +
+  scale_x_continuous(limits = c(1, 43), breaks = c(1, 10, 20, 30, 40)) +
+  scale_y_continuous(limits = c(0, 25)) + 
+  theme_bw() + 
+  theme(text = element_text(family = "Georgia", color = "grey45"),
+        panel.border = element_blank(),
+        legend.title = element_blank(), 
+        legend.text = element_text(size = 18),
+        legend.position = "top",
+        strip.background = element_blank(),
+        strip.text = element_text(color = "grey35", size = 18),
+        axis.line = element_line(),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 12),
+        plot.title = element_text(size = 21, hjust = 0.5))
+
+# calculo proporcion medicare for all
+prop_mfa_prg <- healthcare %>% 
+  filter(comunidad == "Progressives", str_detect(text, "#[a-z0-9]+")) %>% 
+  mutate(is_mfa =  str_detect(text, "#medicareforall|#mfa|#m4a")) %>% 
+  pull(is_mfa) %>% mean()
+
+prop_mfa_dnc <- healthcare %>% 
+  filter(comunidad == "DNC", str_detect(text, "#[a-z0-9]+")) %>% 
+  mutate(is_mfa =  str_detect(text, "#medicareforall|#mfa|#m4a")) %>% 
+  pull(is_mfa) %>% mean()
+
+```
+
+También en términos relativos (hashtags comunes DNC y progresistas, comparados con hashtags comunes entre DNC y GOP ) moderados y progresistas parecen estar más cerca en tópicos relacionados en la cuestión climática de lo que lo están en sanidad o educación.
+
+#### 'Sanidad' para los progresistas es prácticamente sinonimo de *Medicare for all*
+
+En la figura 2 se muestran los hashtags 15 más empleados por cada comunidad para los tweets que mencionan el término *healtahcare*, y también los hashtags que tienden a aparecer conjuntamente con otros hashtags en el mismo tweet de entre los 30 más empleados. Se incluyen en este último caso solamente los hashtags relacionados entre ellos por un **coeficiente phi** mayor que 0,1. 
+
+Los tres grupos manifiestan prioridad por el apoyo a los trabajadores sanitarios (*#fuelingthefrontline*, *#healthcareheroes*, *#nationalnursesweek*),  el DNC critica la gestión del COVID por parte del presidente de los EE.UU (*#trumpgenocide*, *#trumpownseverydeath*) y solamente el grupo progresista prioriza directamente medidas de apoyo a los trabajadores y personas desfavorecidas como consecuencia de la pandemia (*#peoplesbailout, #recovery4all*).
+
+Pero la prioridad absoluta para los progresistas se manifiesta en el uso del hashtag ***#medicareforall***, que aparece en un `r percent(prop_mfa_prg)` de los tweets que emplean algún hashtag cuando hablan de sanidad. En el DNC, solamente aparece en un `r percent(prop_mfa_dnc)` de las veces, aunque también está entre los hashtags más empleados. Sin embargo no parece que el contenido del mensaje donde este hashtag está presente sea el mismo en los dos grupos, como se verá en la siguiente sección.
+
+
+
+```{r creacion_redes}
+# carga datos
+healthcare_hashtag <- readRDS(here::here("content", "post", "DNC_analysis", "datos", "hashtag_ranking", "healthcare_hashtag.rds")) 
+
+
+# healthcare
+gop_cor_data_healthcare <- get_correlation_data(healthcare_hashtag, healthcare_frequency, "GOP", top = 30)
+gop_cor_net_healthcare  <- get_correlation_net(gop_cor_data_healthcare)
+
+dnc_cor_data_healthcare  <- get_correlation_data(healthcare_hashtag, healthcare_frequency, "DNC", top = 30)
+dnc_cor_net_healthcare  <- get_correlation_net(dnc_cor_data_healthcare)
+
+prg_cor_data_healthcare  <- get_correlation_data(healthcare_hashtag, healthcare_frequency, "Progressives", top = 30)
+prg_cor_net_healthcare  <- get_correlation_net(prg_cor_data_healthcare)
+
+healthcare_net <- bind_graphs(gop_cor_net_healthcare, dnc_cor_net_healthcare, prg_cor_net_healthcare) %>% 
+  activate(nodes) %>% 
+  mutate(comunidad = fct_relevel(comunidad, c("GOP", "DNC", "Progressives")))
+
+```
+
+
+
+```{r visualizacion_topicos, fig.width=19, fig.height=20, cache = F}
+# VISUALIZCIÓN DE TÓPICOS -------------------------------------------------
+
+set.seed(123)
+
+plot_topic_networks(healthcare_frequency, healthcare_net, text_size = 7, lab_size = 22, top_words = 15, node_size = 4.5, 
+                    texto_titulo = "Figura 2: Hashtags más empleados relacionados con 'healthcare'\n y relación entre hashtags con un coeficiente phi mayor a 0.1", title_size = 2.5, legend_text_size = 2.5)
+
+```
+
+Los programas sanitarios priorizados por el DNC evidencian aun más las divergencias en los dos grupos en este aspecto: entre los hashtags más empleados del bloque moderado estan  *#aca*, *#medicaid*, y *#medicare*. Estos dos últimos aparecen además directamente asociados a la campaña del partído demócrata (*#voteblue*), mientras que el grupo progresista solo se refiere a la iniciativa *Medicare For All*, y dentro de esta, a su modalidad *Single Payer*, que es lo que realmente diferencia a este grupo del ala moderada (*#aca* también es empleado por los progresistas, pero no entra en el top 15, en el DNC es el quinto hashtag más empleado).
+
+### El término *Medicare For All* tiene trampa (especialmente en campaña electoral)
+
+Aunque antes de la campaña de las primarias, el programa *Medicare For All* se empleaba mayoritariamente para referirse a la iniciativa del senador Bernie Sanders, otros candidatos no asociados con el bloque progresista como [Kamala Harris](https://kamalaharris.org/policies/medicare-for-all/) o [Pete Buttigieg](https://www.npr.org/2019/11/08/774716877/just-the-right-policy-pete-buttigieg-on-his-medicare-for-all-who-want-it-plan?t=1592770044459), empezaron a adoptar este término para referirse a sus propias propuestas de política sanitaria. A estas alturas, *Mediacare For All* parece haberse convertido en algo parecido a un término de marqueting en los círculos Demócratas.
+
+En realidad, hay diferencias sustanciales en los programas sanitarios de los diferentes candidatos aunque estén auspiciados bajo la bandera de *Medicare For All*. Una de las principales se refiere a quién es el pagador de la sanidad: en el programa de Bernie Sanders el único pagador de la sanidad sería el gobierno, por lo que no habría cabida para los seguros sanitarios privados. Es lo que se conoce como **Single Payer Sytem**. Programas como el de Kamala Harris contemplan la sanidad pública como una opción que sería compatible con la existencia de seguros privados. Se denomina a esta modalidad **Public Option**.
+
+
+```{r limpieza_medicareforall}
+# carga de datos
+mfa <- readRDS(here::here("content", "post", "DNC_analysis", "datos", "datos_twitter_limpiados", "medicareforall.rds"))
+
+n_mfa <-mfa %>% filter(comunidad != "Independent") %>% nrow(.)
+
+# Exclusion de tweets con terminos referentes a otras políticas sanitarias
+exclusion_mfa <- "#medicaid|#aca|[Aa]ffordable ?[Cc]are ?[Aa]ct|#publicoption|[Pp]ublic ?[Oo]ption|#medicare( |$|#)|#?COVID|#[Pp]andemic"
+mfa <- mfa %>% 
+  filter(discriminate_term(text, "#medicareforall|#m4a", exclusion_mfa))
+
+# limpieza de topicos
+mfa_healthcare_clean <- mfa %>% 
+  mutate(text = str_replace_all(text, "single payer", "singlepayer")) %>% 
+  mutate(text = str_replace_all(text, "public option", "publicoption")) %>% 
+  mutate(text = str_replace_all(text, "(obama ?care)|(affordable ?care ?act)", "aca")) %>% 
+  mutate(text = str_replace_all(text, "#", "")) %>% 
+  filter(str_detect(text, "singlepayer|publicoption|aca|medicaid|medicare"))
+  
+# creacion de tabla de unigrams
+mfa_clean_unigram <- get_unigrams(mfa_healthcare_clean %>% filter(comunidad != "Independent")) %>% 
+  filter(word %in% c("singlepayer", "publicoption", "aca", "medicaid", "medicare"))
+
+# tabla de frecuencias de los uunigrams
+mfa_clean_freq <- get_frequencies(mfa_clean_unigram) %>% 
+  left_join(mfa %>% 
+             group_by(comunidad) %>% 
+             count(name = "tweets"), by = "comunidad") %>% 
+  mutate(f = n / tweets)
+
+
+```
+
+
+Durante el  periodo en el que se descargaron tweets filtrados por el tópico *healthcare*, se hizo lo mismo con el tópico *Medicare for All*. De los tweets descargados que recogían alguna variación de este término,  `r format(n_mfa, big.mark = ".")` pertenecían a alguna de las tres comunidades contempladas. Para analizar en que medida el modelo Single Payer es el progama referido al hablar de *Medicare for All*, se filtraron Tweets que incluían hashtags relacionados con los principales progrmas sanitarios. Se consideraron los siguientes:
+
+<br>
+
+- **Medicaid**: programa saintario para personas con bajos ingresos.
+- **Madicare**: programa sanitario para mayores de 65 años.
+- **ACA** (Affordable Care Act. También conocido como Obama Care): programa que aumentó la covertura sanitaria para los ciudadanos de los EE.UU, e incluía políticas preventivas orientadas a abaratar los precios de los seguros sanitarios.
+- **Single Payer**.
+- **Public option**.
+
+Mientras que el programa más referenciado en los tres grupos es Medicare, un programa que lleva [más de medio siglo funcionando](https://en.wikipedia.org/wiki/Medicare_(United_States)) el programa *Single Payer* tiene claramente mayor presencia tanto en los progresistas como en el GOP (figura 3).
+
+```{r visualizacion_politicas_medicareforall, fig.align="center"}
+# grafico
+mfa_clean_freq %>% 
+  ungroup() %>% 
+  mutate(comunidad = fct_relevel(comunidad, c("GOP",  "DNC", "Progressives")),
+         word = case_when(
+           word == "singlepayer" ~ "Single Payer", 
+           word == "medicaid" ~ "Medicaid",
+           word == "medicare" ~ "Medicare",
+           word == "aca" ~ "ACA"
+         ),
+         word = fct_reorder2(word, f, comunidad)) %>% 
+  ggplot() + 
+  geom_rect(data = data.frame(xmin = 0.67, 
+                              xmax = 1.33,  ymin = 0,
+                              ymax = 1, 
+                              comunidad = factor(c("GOP",  "DNC", "Progressives"))), 
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), 
+            fill = plots_palette[c(1, 3, 4)], alpha = 1,
+            color = "white") + 
+  geom_col(aes(x = 1, y = f, fill = word), position = "fill",
+           color = "white", width = 0.6) + 
+  geom_text(x = 1, y = 0.9, aes(label = comunidad, color = comunidad), 
+            family = "Georgia", 
+            size = 4) +
+  labs(fill = "Topic") +
+  facet_wrap(~comunidad, nrow = 1) + 
+  theme_bw() + 
+  theme(panel.grid = element_blank()) + 
+  scale_fill_brewer() + 
+  guides(color = F) +
+  theme_bw() +
+  theme(
+    text = element_text(family = "Georgia", color = "grey45"),
+    plot.title = element_text(size = 12, hjust = 0.5),
+    panel.grid = element_blank(),
+    panel.border = element_blank(), 
+    strip.background = element_blank(),
+    strip.text = element_blank(),
+    legend.position = "left",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 12),
+    axis.title.x = element_blank(), 
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank()) + 
+  scale_x_continuous(limits = c(0.5, 1.5)) + 
+  scale_y_continuous(label = scales::percent) + 
+  scale_color_manual(values = plots_palette[c(1, 3, 4)]) + 
+  labs(title = "Figura 3. De qué otros programas o modalidades sanitarias hablan\n las comunidades cuando hablan de Medicare for All")
+```
+
+Sorprendentemente "public option" no se menciona en los tweets sobre *Medicare For All*.
+
+
+### Sin sentimientos antagónicos hacia el modelo *Single Payer* dentro del partido demócrata
+
+
+```{R limpieza_single_payer}
+sp <- readRDS(here::here("content", "post", "DNC_analysis", "datos", "datos_twitter_limpiados", "singlepayer.rds")) %>%
+  mutate(comunidad = fct_relevel(comunidad, comunidad_order))
+
+n_sp <- sp %>% filter(comunidad != "Independent") %>% nrow(.)
+
+# filtro de tweets con politicas sanitarias no compatibles con sigle payer y datos relacionados con covid
+exclusion_sp <- "#medicaid|#aca|[Aa]ffordable ?[Cc]are ?[Aa]ct|#publicoption|[Pp]ublic ?[Oo]ption|#medicare( |$|#)|#COVID|COVID"
+sp <- sp %>% 
+  filter(discriminate_term(text, "[Ss]ingle ?[Pp]ayer", exclusion_sp))
+
+n_sp_limpio <- sp %>% filter(comunidad != "Independent") %>% nrow(.)
+
+
+```
+
+```{r singlepayer_tabla_sentimientos_medios}
+sp_sent <- sp %>% 
+  filter(comunidad != "Independent") %>% 
+  group_by(comunidad) %>% 
+  summarise(sent = mean(ave_sentiment), 
+            n = n()) %>% 
+  mutate(f = percent(n / sum(n), accuracy = 0.1))
+# sp_sent
+```
+
+*Single Payer* es precisamente otro tópico filtrado en la recogida de datos. De los tweets filtrados por diferentes versiones del término *singlepayer* descargados, `r format(n_sp, big.mark = ".")` pertenecían alguna de las tres comunidades analizadas. La tabla 2 recoge el número de tweets con este tema para cada comunidad.
+
+```{r, tablas_tweets_sp}
+
+sp %>% 
+  filter(comunidad != "Independent") %>% 
+  count(comunidad) %>% 
+  mutate(f = paste0("(", round(n / sum(n) * 100, 0), ")")) %>% 
+  unite("Nº de tweets (%)", n, f, sep = " ") %>% 
+  rename(Comunidad = comunidad) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, font_size = 13) %>% 
+  add_header_above(c("Tabla2: Nº de tweets recogidos para Single Payer" = 2), color = "grey45", font_size = 13) 
+
+```
+
+
+Se ha llevado a cabo un **análisis de sentimiento**, calculando el scoring de polaridad de los tweets con alguna variación del término *Single payer*, eliminando previamente tweets con alguna variación de términos que hacen referencia también a políticas sanitarias antagónicas (ACA, Medicaid, Medicare y Public Option). Tras estos filtros, quedaron `r format(n_sp_limpio, big.mark = ".")` tweets con el téma *Single Payer*. 
+
+El análisis, llevado a cabo empleando la librería **sentimentr** (las funciones de esta librería tienen en cuenta amplificadores y negadores), y tomándo como unidad de análisis un tweet, no revela diferencias significativas en polaridad cuando se comparan DNC y progresistas, cosa que si ocurre cuando se comparan DNC y GOP. La visualización en la figura 4, de 5.000 replicaciones bootstrap del scoring de sentimiento medio en cada grupo refleja esta no detección de diferencias entre los dos movimientos dentro del partido de la izquierda.
+
+```{r test_diferencias_sent_singlepayer, fig.align="center"}
+
+
+# test diferencias DNC Progressives
+test_sp_dnc_prog <- get_test_dif(sp, groups = c("DNC", "Progressives"))
+# test_sp_dnc_prog[-1]
+
+test_sp_gop_prog <- get_test_dif(sp, groups = c("GOP", "Progressives"))
+# test_sp_gop_prog[-1]
+
+
+plot_gop_prog <- test_sp_gop_prog$data %>% 
+  ggplot(aes(sentimiento)) + 
+  geom_histogram(aes(group = comunidad, fill = comunidad), color = "white", position = "identity", alpha = 0.6, binwidth =0.002) + 
+  scale_fill_manual(values = plots_palette[c(1, 4)]) +
+  labs(x = "Puntuacion sentimiento medio por tweet", 
+       title = "Replicaciónes bootstrap del sentimiento medio para GOP y Progressives") + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(),
+        panel.border = element_blank(), 
+        legend.title = element_blank(), 
+        legend.position = "top",
+        axis.title.y = element_blank(),
+        text = element_text(family = "Georgia", color = "grey55")) +
+  geom_vline(xintercept = 0, lty = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 0.1)) + 
+  theme(plot.title = element_blank()) + 
+  guides(fill = F)
+
+
+plot_dnc_prog <- test_sp_dnc_prog$data %>% 
+  ggplot(aes(sentimiento)) + 
+  geom_histogram(aes(group = comunidad, fill = comunidad), color = "white", position = "identity", alpha = 0.6, binwidth =0.002) + 
+  scale_fill_manual(values = plots_palette[3:4]) + 
+  labs(x = "Puntuacion sentimiento medio por tweet", 
+       title = "Replicaciónes bootstrap del sentimiento (polaridad) medio") + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(),
+        panel.border = element_blank(), 
+        legend.title = element_blank(), 
+        legend.position = "top",
+        axis.title.y = element_blank(),
+        text = element_text(family = "Georgia", color = "grey55")) +
+  geom_vline(xintercept = 0, lty = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 0.1))+ 
+  theme(plot.title = element_blank(), 
+        axis.title.x = element_blank()) + 
+  guides(fill = F)
+
+titulo <-  textGrob(label = "Figura 4. Distribución de muestreo empírica del scoring de sentimiento medio\n hacia el programa Single Payer", gp = gpar(fontfamily = "Georgia", cex = 1.2))
+
+leyenda <- legendGrob(labels = c("GOP",  "DNC", "Progressives"),  pch = 21, 
+                      gp = gpar(fill = plots_palette[c(1, 3, 4)], fontfamily = "Georgia", cex = 1), nrow = 1)
+
+
+grid.arrange(titulo, leyenda, plot_dnc_prog, plot_gop_prog, heights = c(1, 1, 5, 5))
+```
+
+### Conclusiones
+
+Aunque las precauciones que hay que tener presentes, relacionadas con la intencionalidad real de un tweet, de un hashtag o con el nivel de actividad de los usuarios, hacen que uno tenga que ir con pies de plomo cuando se trata de tomar cualquier tipo de conclusión, unas pautas puede que no del todo conclusivas, aunque en algunos casos bastante orientativas, parecen emerger de entre los tweets analizados. 
+
+Exceptuando la disponibilidad de equipo sanitario durante la pandemia (*#ppe*), la única preocupacion que moderados y progresistas del partído demócrata tienen en común, tambíen aparece entre los hashtags más empleados en el partído republicano: el apoyo a los trabajadores sanitarios. El apoyo directo a trabajadores y personas desfavorecidas consecuencia de la pandemia (*#peoplesbailout*, *#recovery4all*) solo ocupa una posición relevante en el grupo progresista.
+
+Las diferencias estructurales de calado entre estos dos bloques parecen encrontrarse en la priorización de políticas sanitarias específicas: los progresistas priorizan casi exclusivamente *Medicare for All*, específicamente en la modalidad *Single Payer*, y son los que valoran este programa de una forma claramente positiva, aunque el bloque moderado (DNC) no parece tener una opinión especialmente desfavorable. Simplemente no entra tanto en sus prioridades. 
+
+Adicionalmente, los programas sanitarios en funcionamiento en la actualidad no son priorizados por el movimiento progresista, mientras que en el ala moderada, están entre los tópicos más mencionados.
+
+En la segunda parte de esta serie hablaré de las diferencias percibidas en figuras políticas representativas de los tres grupos, e incluiré un cálculo de scoring de polarización a partir del  de los 'nodos frontera' en una red de retweets, basado en [este artículo](https://www.cs.cornell.edu/home/cardie/papers/ICWSM13-Polarization.pdf).
+
+[Acceso al repositorio con el análisis](https://github.com/MartinPons/DNC-analysis).
