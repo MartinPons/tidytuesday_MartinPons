@@ -10,6 +10,7 @@ library(skimr)
 library(glue)
 library(Cairo)
 library(scales)
+library(ggtext)
 
 # data
 # tuesdata <- tidytuesdayR::tt_load(2021, week = 2)
@@ -18,7 +19,6 @@ library(scales)
 transit_cost <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-05/transit_cost.csv')
 
 glimpse(transit_cost)
-skim(transit_cost)
 
 
 # WRANGLING ---------------------------------------------------------------
@@ -30,7 +30,7 @@ transit_cost <- transit_cost %>%
 
 #hay que pasar variables definidas como categoricas, a numericas
 transit_cost <- transit_cost %>% 
-  mutate(tunnel_per = parse_number(tunnel_per),
+  mutate(tunnel_per = replace_na(parse_number(tunnel_per), 0),
          real_cost = parse_number(real_cost),
          across(start_year:end_year, as.numeric)) %>% 
   
@@ -49,7 +49,7 @@ outliers <- transit_cost %>%
 reg <- lm(real_cost ~ length, data = transit_cost)
 outliers <- 
   outliers %>% 
-  mutate(fit = reg[1] + reg[2] * length)
+  mutate(fit = reg$coefficients[1] + reg$coefficients[2] * length)
 
 transit_cost <- 
   transit_cost %>% 
@@ -59,35 +59,33 @@ transit_cost <-
 outliers_error <- 
   transit_cost %>% 
   filter(error < quantile(error, 0.005) | error > quantile(error, 0.995)) %>%
-  mutate(years_to_complete = end_year - start_year) %>% 
+  mutate(years_to_complete = replace_na(end_year - start_year, "Unspecified")) %>% 
   select(e, country, city, line, start_year, years_to_complete, tunnel, real_cost, length, fit)
 
 segments_df <- tribble(
   ~x, ~xend, ~y_shift,
-  30, 30, -1000,
+  30, 30, -4000,
   20, 20, 0,
   50, 50, 0,
-  72, 72, 3500,
-  67, 67, -1300,
+  72, 72, 4000,
+  67, 67, -2600,
   60, 60, -1000
 ) %>% 
   mutate(e = outliers_error$e)
 
-# paths_df <- data.frame(e = rep(outliers_error$e, each = 4),
-#                        length = c(41.5, 35, 35, 30, 43, 30, 30, 20, )
-                       
                        
 outliers_error <- outliers_error %>% 
-  mutate(text = glue('Project: {line}\nCity: {city} ({country})\nStart: {start_year}\nYears to complete: {years_to_complete}\n% of lenght is tunnel: {tunnel}\nDeviation from predicted: {comma(real_cost - fit, prefix = "$", suffix =  "M")}'), 
+  mutate(text = glue('Project: {line}\nCity: {city} ({country})\nTotal cost: {comma(real_cost, prefix = "$", suffix =  "M")}\nStart: {start_year}\nYears to complete: {years_to_complete}\nDeviation from predicted: {comma(real_cost - fit, prefix = "$", suffix =  "M")}'), 
          hjust = c("right", "right", "right", "right", "left", "left")) 
 
 outliers_error <- outliers_error %>% 
   left_join(segments_df, by = "e") %>% 
-  mutate(y = real_cost - 1800 + y_shift, 
-         yend = real_cost + 1800 + y_shift, 
+  mutate(y = real_cost - 2300 + y_shift, 
+         yend = real_cost + 2300 + y_shift, 
          y2 = real_cost - 300 + y_shift, 
          yend2 = real_cost + 300 + y_shift, 
-         x2 = ifelse(hjust == "right", x + 0.3, x - 0.3))
+         x2 = ifelse(hjust == "right", x + 0.3, x - 0.3), 
+         x_beggin = ifelse(hjust == "right", length - 0.7, length + 0.7))
 
 paths_df <- outliers_error %>% 
   mutate(x_middle1 = (length + x) / 2, 
@@ -96,22 +94,20 @@ paths_df <- outliers_error %>%
          y_middle2 = (y + yend) / 2,
          y_end = (y + yend) / 2
          ) %>% 
-  select(e, length,  x_middle1, x_middle2, x2, real_cost, y_middle1, y_middle2, y_end) %>% 
-  rename(x_beggin = length, x_end = x2, y_beggin = real_cost) %>% 
+  select(e, x_beggin, x_middle1, x_middle2, x2, real_cost, y_middle1, y_middle2, y_end) %>% 
+  rename(x_end = x2, y_beggin = real_cost) %>% 
   pivot_longer(names_to = c(".value", "point"), names_sep = "_", cols = 2:ncol(.))
 
 
- # mutate(x = ifelse(hjust == "rigth", x - 1, x + 1))
 
 
-# imagino que coste en dolares se relaciona con la longitud
+# VISUALIZATION -----------------------------------------------------------
 
-# podemos hacer scatterplot y resaltar puntos que se han destivado demasiado del coste medio
-CairoWin()
+# CairoWin()
 
 transit_cost %>% 
   ggplot(aes(length, real_cost)) + 
-  geom_point(color = "grey55", alpha = 0.6) + 
+  geom_point(color = "grey65", alpha = 0.6) + 
   geom_segment(data = outliers_error, aes(x = length, xend = length,
                                     y= fit, yend = real_cost - 350),
                color = "grey25") +
@@ -131,7 +127,7 @@ transit_cost %>%
            color = "#bbd1f0", lty = "dashed") +
   
   annotate(geom = "text", x = 65, y = predict(reg, data.frame(length = 70)) + 900,
-           label = glue("Every 10 Km of road increases \n the cost, on average, in {comma(reg$coefficients[2], , prefix = '$', suffix =  'M')}"),
+           label = glue("Every 10 Km of road increases \n the cost in {comma(reg$coefficients[2], , prefix = '$', suffix =  'M')} on average"),
            color = "#bbd1f0", 
            size = 2.9) +
 
@@ -154,13 +150,13 @@ transit_cost %>%
             size = 3) +
 
   labs(x = "Length of the line (Km)", 
-       y = "Real cost of the project ($)", 
-       title = "THE MORE EXPENSIVE AND CHEAPEST TRANSIT-INFRASTRUCTURE PROJECTS", 
-       subtitle = "Highligthed projects are below the 0.5 percentile or above the 99.5 percentile over the predicted cost") +
+       y = "Real cost of the project (millions of $)", 
+       title = "THE MOST AND LEAST COSTLY TRANSIT-INFRASTRUCTURE PROJECTS AROUND THE WORLD", 
+       subtitle = "Every point represents a project. Highligthed projects are below the 0.5 percentile or above the 99.5 percentile of the  <span style='color:#385ee8'>predicted cost</span>", 
+       caption = "Projects are limitied to 80 Km of road or less\nData comes from the Transit Costs Project. Visualization by Martín Pons | @MartinPonsM") +
   
   scale_x_continuous(breaks = seq(0, 80, by = 10)) +
   scale_y_continuous(labels = comma) +
-  
 
   theme(
     text = element_text(family = "Candara", color = "#9dc6e0"),
@@ -170,7 +166,8 @@ transit_cost %>%
     axis.text = element_text(size = 13, color = "#9dc6e0"), 
     axis.title = element_text(size = 13, color = "#9dc6e0"),
     plot.title = element_text(color = "#bbd1f0", size = 20),
-    plot.subtitle = element_text(color = "#9bb0c9", size = 13)
+    plot.subtitle = element_markdown(color = "#9bb0c9", size = 13),
+    plot.caption = element_text(color = "#9bb0c9", size = 10)
 ) 
 
 ggsave(here::here("transit_cost2.png"), type = "cairo-png", dpi = 400)
