@@ -31,11 +31,6 @@ transit_cost <- transit_cost %>%
   # remove outliers_length
   filter(length <= 80)
 
-# remove length outliers
-outliers <- transit_cost %>% 
-  filter(real_cost > quantile(real_cost, 0.985)) %>% 
-  select(real_cost, length)
-
 # fit linear regression cost ~ length
 reg <- lm(real_cost ~ length, data = transit_cost)
 
