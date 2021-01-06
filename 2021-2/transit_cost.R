@@ -149,7 +149,7 @@ transit_cost %>%
   labs(x = "Length of the line (Km)", 
        y = "Real cost of the project (millions of $)", 
        title = "THE MOST AND LEAST COSTLY TRANSIT-INFRASTRUCTURE PROJECTS AROUND THE WORLD", 
-       subtitle = "Every point represents a project. Highligthed projects are below the 0.5 percentile or above the 99.5 percentile of the  <span style='color:#385ee8'>predicted cost</span>", 
+       subtitle = "Each dot represents a project. Highligthed projects are below the 0.5 percentile or above the 99.5 percentile of the  <span style='color:#385ee8'>predicted cost</span>", 
        caption = "Projects are limitied to 80 Km of road or less\nData comes from the Transit Costs Project. Visualization by Martín Pons | @MartinPonsM") +
   
   scale_x_continuous(breaks = seq(0, 80, by = 10)) +
