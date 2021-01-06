@@ -46,14 +46,14 @@ outliers <- transit_cost %>%
   filter(real_cost > quantile(real_cost, 0.985)) %>% 
   select(real_cost, length)
 
-reg <- lm(real_cost ~ length, data = transit_cost)$coefficients
+reg <- lm(real_cost ~ length, data = transit_cost)
 outliers <- 
   outliers %>% 
   mutate(fit = reg[1] + reg[2] * length)
 
 transit_cost <- 
   transit_cost %>% 
-  mutate(fit = reg[1] + reg[2] * length, 
+  mutate(fit = predict(reg, transit_cost), 
          error = real_cost - fit)
 
 outliers_error <- 
@@ -68,7 +68,7 @@ segments_df <- tribble(
   20, 20, 0,
   50, 50, 0,
   72, 72, 3500,
-  67, 67, -1000,
+  67, 67, -1300,
   60, 60, -1000
 ) %>% 
   mutate(e = outliers_error$e)
@@ -117,14 +117,24 @@ transit_cost %>%
                color = "grey25") +
   geom_point(data = outliers_error, color = "#059fff", size = 5, shape = 1, stroke = 1) +
   geom_point(data = outliers_error, color = "white", size = 2.2) +
+  
+  annotate(geom = "segment", x = 60, xend = 70,
+           y = predict(reg, data.frame(length = 70)),
+           yend = predict(reg, data.frame(length = 70)), 
+           color = "grey65", lty = "dashed") +
+  
+  annotate(geom = "text", x = 65, y = predict(reg, data.frame(length = 70)) + 900,
+           label = glue("Every 10 Km of road increases \n the average cost in {comma(reg$coefficients[2], , prefix = '$', suffix =  'M')}"),
+           color = "white", 
+           size = 2.9) +
 
   geom_smooth(method = "lm", se = F) +
   
-  geom_segment(data = outliers_error, aes(x = x , xend = xend, y = y, yend = yend), color = "white") +
+  geom_segment(data = outliers_error, aes(x = x , xend = xend, y = y, yend = yend), color = "#059fff") +
   geom_segment(data = outliers_error, aes(x = x2, 
                                           xend = x2,
                                           y = y2, 
-                                          yend = yend2), color = "white") +
+                                          yend = yend2), color = "#059fff") +
   
   geom_path(data = paths_df, 
             aes(x, y, group = e), color = "white", 
@@ -135,8 +145,31 @@ transit_cost %>%
             aes(ifelse(hjust == "right",x - 0.5, x + 0.5), (y + yend) / 2, label = text, hjust = hjust), 
             color = "white", 
             size = 3) +
+  
+ annotate(geom = "segment", x = 60, xend = 60,
+          y = predict(reg, data.frame(length = 60)),
+          yend = predict(reg, data.frame(length = 70)), 
+          color = "grey65", lty = "dashed") +
+  
+  labs(x = "Length of the line (Km)", 
+       y = "Real cost of the project ($)", 
+       title = "The more expensive and cheapest Transit-infrastucture projects", 
+       subtitle = "Highligthed projects are below the 0.5 or above the 99.5 percentile ove the predicted cost") +
+  
+  scale_x_continuous(breaks = seq(0, 80, by = 10)) +
+  
 
-  theme(panel.background = element_rect(fill = "grey15"), 
-        panel.grid = element_blank()) 
+  theme(
+    text = element_text(family = "Candara"),
+    plot.background = element_rect(fill = "grey15"),
+    panel.background = element_rect(fill = "grey15"), 
+    panel.grid = element_blank(), 
+    axis.text = element_text(color = "grey75", size = 11), 
+    axis.title = element_text(color = "grey75", size = 12), 
+    plot.title = element_text(color = "grey85", family = "Candara"),
+    plot.subtitle = element_text(color = "grey85", family = "Candara")
+) 
 
-ggsave(here::here("transit_cost.png"), type = "cairo-png")
+ggsave(here::here("transit_cost2.png"), type = "cairo-png", dpi = 400)
+
+comma(real_cost - fit, prefix = "$", suffix =  "M")
