@@ -118,17 +118,24 @@ transit_cost %>%
   geom_point(data = outliers_error, color = "#059fff", size = 5, shape = 1, stroke = 1) +
   geom_point(data = outliers_error, color = "white", size = 2.2) +
   
+  
+  annotate(geom = "segment", x = 60, xend = 60,
+           y = predict(reg, data.frame(length = 60)),
+           yend = predict(reg, data.frame(length = 70)), 
+           color = "#bbd1f0", lty = "dashed") +
+  
+  
   annotate(geom = "segment", x = 60, xend = 70,
            y = predict(reg, data.frame(length = 70)),
            yend = predict(reg, data.frame(length = 70)), 
-           color = "grey65", lty = "dashed") +
+           color = "#bbd1f0", lty = "dashed") +
   
   annotate(geom = "text", x = 65, y = predict(reg, data.frame(length = 70)) + 900,
-           label = glue("Every 10 Km of road increases \n the average cost in {comma(reg$coefficients[2], , prefix = '$', suffix =  'M')}"),
-           color = "white", 
+           label = glue("Every 10 Km of road increases \n the cost, on average, in {comma(reg$coefficients[2], , prefix = '$', suffix =  'M')}"),
+           color = "#bbd1f0", 
            size = 2.9) +
 
-  geom_smooth(method = "lm", se = F) +
+  geom_smooth(method = "lm", se = F, color = "#385ee8") +
   
   geom_segment(data = outliers_error, aes(x = x , xend = xend, y = y, yend = yend), color = "#059fff") +
   geom_segment(data = outliers_error, aes(x = x2, 
@@ -145,29 +152,25 @@ transit_cost %>%
             aes(ifelse(hjust == "right",x - 0.5, x + 0.5), (y + yend) / 2, label = text, hjust = hjust), 
             color = "white", 
             size = 3) +
-  
- annotate(geom = "segment", x = 60, xend = 60,
-          y = predict(reg, data.frame(length = 60)),
-          yend = predict(reg, data.frame(length = 70)), 
-          color = "grey65", lty = "dashed") +
-  
+
   labs(x = "Length of the line (Km)", 
        y = "Real cost of the project ($)", 
-       title = "The more expensive and cheapest Transit-infrastucture projects", 
-       subtitle = "Highligthed projects are below the 0.5 or above the 99.5 percentile ove the predicted cost") +
+       title = "THE MORE EXPENSIVE AND CHEAPEST TRANSIT-INFRASTRUCTURE PROJECTS", 
+       subtitle = "Highligthed projects are below the 0.5 percentile or above the 99.5 percentile over the predicted cost") +
   
   scale_x_continuous(breaks = seq(0, 80, by = 10)) +
+  scale_y_continuous(labels = comma) +
   
 
   theme(
-    text = element_text(family = "Candara"),
+    text = element_text(family = "Candara", color = "#9dc6e0"),
     plot.background = element_rect(fill = "grey15"),
     panel.background = element_rect(fill = "grey15"), 
     panel.grid = element_blank(), 
-    axis.text = element_text(color = "grey75", size = 11), 
-    axis.title = element_text(color = "grey75", size = 12), 
-    plot.title = element_text(color = "grey85", family = "Candara"),
-    plot.subtitle = element_text(color = "grey85", family = "Candara")
+    axis.text = element_text(size = 13, color = "#9dc6e0"), 
+    axis.title = element_text(size = 13, color = "#9dc6e0"),
+    plot.title = element_text(color = "#bbd1f0", size = 20),
+    plot.subtitle = element_text(color = "#9bb0c9", size = 13)
 ) 
 
 ggsave(here::here("transit_cost2.png"), type = "cairo-png", dpi = 400)
