@@ -58,9 +58,6 @@ departure_firms_main_cause <- departures %>%
 
 
 
-
-
-
 # VISUALIZATION -------------------------------------------------
 
 palette <- c("#894843", "#887d74")
@@ -134,7 +131,11 @@ g_bar <-
     legend.position = "top") + 
   
   coord_equal()
-  
+
+
+# INTERACTIVITY  ----------------------------------------------------------
+
+
 g_inter <- girafe(ggobj = g_bar)
   
 g_inter %>% 
