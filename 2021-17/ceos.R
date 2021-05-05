@@ -91,7 +91,7 @@ g_bar <-
                         color = bg_color, 
                         size = 2.5, 
                         hjust = "left", 
-                        alpha = 0, 
+                        alpha = 0, # total transparency to hide text when cursor is not hovering over squares
                         family = "Georgia") + 
   
   # firm vol. and invol. departures text
