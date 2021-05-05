@@ -72,6 +72,7 @@ g_bar <-
   filter(coname %in% top_departure_firms) %>% 
   left_join(departure_firms_main_cause, by = "coname") %>% # to get nº of vol and invol. dep. in main data layer
   
+  # plot
   ggplot(aes(fyear)) + 
   
   # bars
