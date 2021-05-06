@@ -8,7 +8,7 @@ library(ggthemes)
 library(ggtext)
 library(ggiraph)
 library(glue)
-library(ggtext)
+library(cowplot)
 library(extrafont)
 
 tuesdata <- tidytuesdayR::tt_load(2021, week = 18)
