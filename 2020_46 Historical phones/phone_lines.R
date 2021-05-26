@@ -94,7 +94,8 @@ l_plot <- lines_continent_filtered %>%
   view_follow() 
 
 # render animation
-animate(l_plot, nframes = 150, height = 500, width = 800, type = 'cairo')
+animate(l_plot, nframes = 150, height = 500, width = 800, 
+        renderer = gifski_renderer(), type = 'cairo')
  
 # save animation  
 anim_save(here::here("path.gif"))
