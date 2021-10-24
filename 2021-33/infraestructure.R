@@ -4,7 +4,8 @@
 
 # Data and additional info comes from "Measuring Infrastructure in the Bureau of Economic Analysis National Economic Accounts"
 # By Jennifer Bennett, Robert Kornfeld, Daniel Sichel and David Wasshausen
-# And publised by the Bureau of Economic Analysis 
+# And published by the Bureau of Economic Analysis 
+# https://www.bea.gov/system/files/papers/BEA-WP2020-12.pdf
 
 # INITIAL SETTING ---------------------------------------------------------
 
@@ -22,9 +23,11 @@ theme_set(theme_tufte())
 # data
 tuesdata <- tidytuesdayR::tt_load(2021, week = 33)
 
-chain_investment <-tuesdata$chain_investment #  readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/chain_investment.csv')
-investment <- tuesdata$investment
+# chain_investment <-tuesdata$chain_investment #  readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/chain_investment.csv')
+# investment <- tuesdata$investment
 
+investment <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/investment.csv')
+chain_investment <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/chain_investment.csv')
 
 # function to uppercase and create a blank space between a string character. Used in plot title and in main category labels
 insert_blank_between <- function(string) {
@@ -289,7 +292,7 @@ of this new <span style='color:#1d465c;'>digital infrastructure</span> is privat
 
 
 
-ggsave(plot = g, "C:/Users/marti/OneDrive/Favoritos/Documentos/tidy_tuesday_projects/expenditures.png", type = "cairo-png", dpi = 300, 
+ggsave(plot = g, "expenditures.png", type = "cairo-png", dpi = 300, 
        width = 11, 
        height = 7)
 
