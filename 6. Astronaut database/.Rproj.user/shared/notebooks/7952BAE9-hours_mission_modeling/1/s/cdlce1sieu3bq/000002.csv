@@ -1,8 +1,0 @@
-"0","astro_recipe <- recipe(hours_mission ~ ., data = astro_train) %>% "
-"0","  update_role(name, mission_title, new_role = ""id"") %>% # name y mission title no son predictores. Juntos forman una id"
-"0","  "
-"0","  # hay que niveles en algunas variables"
-"0","  step_other(occupation, in_orbit, threshold = 0.05) %>% # para meter infrecuentes en other"
-"0","  "
-"0","  step_dummy(all_nominal(), - has_role(""id""))"
-"0",""

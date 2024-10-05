@@ -12,8 +12,9 @@
 # libraries
 library(tidytuesdayR)
 library(tidyverse)
-library(extrafont)
-
+library(ggimage)
+library(Cairo)
+library(countrycode)
 
 
 # data load
@@ -29,7 +30,7 @@ astronauts <- tuesdata$astronauts
 
 set.seed(140) # random state for star placement
 
-n_stars = 75 # number of stars 
+n_stars <- 75 # number of stars 
   
 # stars data.frame
 stars <- data.frame(
@@ -69,6 +70,12 @@ astronauts <- astronauts %>%
 # font_import()
 # loadfonts(device = "win")
 
+
+civilian_color <- "#bc7d67" #"#ae8475"
+military_color <-  "#68859c"
+
+
+CairoWin()
 astronauts %>% 
   
   # axis coordinates, dot orientation an dot color
@@ -78,18 +85,18 @@ astronauts %>%
   # stars placement in the background
   geom_point(data = stars, 
              aes(x = x, y = y, alpha = alpha), 
-             size = 0.5, 
+             size = 0.3, 
              color = "white", 
              show.legend = F) +
   
   # dots for astronauts
-  geom_point(size = 3) + 
+  geom_point(size = 2) + 
   
   # timeline: years, text annotations and vertical lines to enclose it
   geom_text(data = data.frame(year_of_mission = seq(1960, 2020, by = 5)), 
             aes(label = year_of_mission, x = 0), 
             color = "lightblue", 
-            size = 3) + 
+            size = 4) + 
   
   geom_segment(data = data.frame(x = c(-5.5, 5.5), 
                                  xend = c(-5.5, 5.5), 
@@ -100,47 +107,52 @@ astronauts %>%
 
   annotate(geom = "text", x = 0, y =-1962, 
            label = "Yuri Gagarin, first human\n in outer space", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   annotate(geom = "text", x = 0, y =-1968.5, 
            label = "First man on The Moon", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   annotate(geom = "text", x = 0, y =-1982, 
            label = "Space shuttle\n program beggins", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   annotate(geom = "text", x = 0, y =-1986.5, 
            label = "MIR in orbit", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   annotate(geom = "text", x = 0, y =-2012, 
            label = "Space shuttle\n program ends", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   annotate(geom = "text", x = 0, y =-1998, 
            label = "ISS in orbit", color = "#e6c15c",
-           size = 2.5) +
+           size = 3) +
   
   # titles with nationalities
-  annotate(geom = "text", x = -12, y = -1959, label = "U.S.S.R / Russia", color = "red", 
-           family = "Verdana Pro") +
+ # annotate(geom = "text", x = -12, y = -1959, label = "U S S R / R U S S I A", color = "red", 
+ #           family = "Impact") +
   
-  annotate(geom = "text", x = 9, y = -1959, label = "U.S.A", color = "#4287f5", 
-           family = "Verdana Pro") + 
+  
+ # annotate(geom = "text", x = 9, y = -1959, label = "U S A", color = "#4287f5", 
+ #         family = "Impact") + 
+  
+ # ggimage::geom_flag(x = 11, y = -1965, image = "US") + 
+
   
   # dot colors
-  scale_color_manual(values = c("#7792bf", "#e6622e")) +
+  scale_color_manual(values = c(civilian_color, military_color)) +
   
   # limits for time scale: we want extra space for annotations
   scale_y_continuous(limits = c(-2021, -1957)) + 
-  
+  # "Númber of  U.S.A and U.S.S.R / Russian astronauts in space missions"
   # title and caption
-  labs(title = "Númber of  U.S.A and U.S.S.R / Russian astronauts in space missions", 
+  labs(title = "N U M B E R    O F    U S A    AND    U S S R / R U S S I A N    A S T R O N A U T S    I N    S P A C E    M I S S I O N S", 
        caption = "Data comes from Mariya Stavnichuk and Tatsuya Corlett, cleaned by Georgios Karamanis. Visualization by Martín Pons | @MartinPonsM") + 
   
   # plot theme  
   theme(panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
         panel.grid = element_blank(), 
         axis.title = element_blank(), 
         axis.text = element_blank(), 
@@ -150,10 +162,16 @@ astronauts %>%
         legend.background = element_blank(),
         legend.text = element_text(color = "lightblue", size = 10),
         legend.key = element_blank(),
-        plot.title = element_text(hjust = 0.5, vjust = -7, color = "lightblue"),
+        plot.title = element_text(hjust = 0.5, vjust = -7, color = "lightblue", family = "Impact", size = 17),
         plot.caption = element_text(color = "lightblue", vjust = 17, hjust = 0.5)) 
     
 
-
+ggsave(here::here("usa_ussr_astronauts.png"),
+       device = png, 
+       type = "cairo",
+       dpi = 300, 
+       width = 24.1, 
+       height = 20.3, 
+       units = "cm")
     
   
